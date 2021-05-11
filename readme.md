@@ -1,7 +1,7 @@
 ## 基于JNA调用实现DNS域名异步解析
 ### 1. before
-虽然JNI也可以完成Java与c/c++的互通，但是在返回特定数据时会异常异常麻烦。如返回一个 Map<Integer,List<String>> 则需要先构建一个各种数据类型，操作如下：
-``` java
+虽然JNI也可以完成Java与c/c++的互通，但是在返回特定数据时会异常异常麻烦，甚至连回调代码都需要自己写，弄了许久回调成功了，但是一调试就崩溃。如返回一个 Map<Integer,List<String>> 则需要先构建一个各种数据类型，操作如下：
+``` c++
 jobject buildHashMap(JNIEnv* env, map<int, vector<string>> mapper) {
 	jclass class_hashmap = env->FindClass("java/util/HashMap");
 	jmethodID hashmap_construct_method = env->GetMethodID(class_hashmap, "<init>", "()V");
@@ -38,4 +38,19 @@ jobject buildHashMap(JNIEnv* env, map<int, vector<string>> mapper) {
 ### 2. 重点 - 完成DNS异步解析功能
 为什么需要用到DNS异步解析功能，这个起源于项目中使用到rocketmq-4.8.0时发现，当我们在配置文件中的brokerIP1设置的是域名时，会导致某条消息已消费但是实际上控制台的状态却消失未未消费。
 最后查看源码发现是因为rocketmq没有对该属性进行域名解析，导致判断出错。后来我就在github提了一个 [issue](https://github.com/apache/rocketmq/issues/2697) ，后来发现竟然还可以使用异步的方式来解析域名，
-所以才找到了三方高性能网络库 libevent 来解析。该库基于C语言开发，故需要用到 JNA . 
+所以才找到了三方高性能网络库 libevent 来解析。该库基于C语言开发，故需要用到 JNA .
+
+
+
+### 3. 遇到的问题及遗留问题
+
+最蛋疼的莫过于从C++传一个字符数组回到 Java，对应关系是 char** -> String[ ]。Java 端使用的是 PointerByReference 指针引用，该类型的部分操作实在有点让人抓狂，stackoverflow也有人在为此吐槽。搞许久才算有结果，然鹅，然鹅... 不知道为什么C++实际解析是两个不同的IP，到了Java缺是两个一样的IP，指针都一样，头大。阿姨，我不想努力了！！！遗留问题后面有时间再处理。
+
+``` sh
+errcode: 0    // java 打印
+14.215.177.38 // java 打印
+14.215.177.38 // java 打印
+www.baidu.com: 14.215.177.39 , index: 0, result[i]: 14.215.177.39  // C++ 打印
+www.baidu.com: 14.215.177.38 , index: 1, result[i]: 14.215.177.38  // C++ 打印
+```
+
