@@ -54,3 +54,14 @@ www.baidu.com: 14.215.177.39 , index: 0, result[i]: 14.215.177.39  // C++ 打印
 www.baidu.com: 14.215.177.38 , index: 1, result[i]: 14.215.177.38  // C++ 打印
 ```
 
+
+
+### 4. 使用 netty 做域名解析
+
+2021.5.12上班时在B站不经意间看了下netty，发现它里面原本就有域名解析的相关类，于是上[GitHub](https://github.com/netty/netty/blob/4.1/example/src/main/java/io/netty/example/dns/tcp/TcpDnsClient.java) 看了下里面的 example， 有 TcpDnsClient，DnsClient，同样是以异步的方式进行解析。后来想了想前面使用libevent真是绕了太大的弯，不过多少也明白使用jna开发可以比jni更加高效。其实还有个问题，就是在c++代码解析域名中我并没有指定域名服务器，而netty 的demo里面是需要指定的，那libevent默认是使用什么DNS服务器呢？于是找到wireshark试试，发现其实是使用windows系统默认的首选DNS服务器，只要把这个选项一修改就会发现请求的地址也变了。
+
+![image-20210512103535732](images/readme/image-20210512103535732.png)
+
+![image-20210512103637874](images/readme/image-20210512103637874.png)
+
+![image-20210512102319656](images/readme/image-20210512102319656.png)

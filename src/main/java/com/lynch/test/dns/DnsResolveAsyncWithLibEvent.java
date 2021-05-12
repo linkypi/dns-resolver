@@ -12,10 +12,10 @@ import java.util.List;
  * Created by troub on 2021/5/11 12:30
  */
 //@Slf4j
-public class DnsTest {
+public class DnsResolveAsyncWithLibEvent {
     public interface DnsLibrary extends Library {
         // JNA 为 dll 名称
-        DnsTest.DnsLibrary INSTANCE = Native.load("lib-dns", DnsTest.DnsLibrary.class);
+        DnsResolveAsyncWithLibEvent.DnsLibrary INSTANCE = Native.load("lib-dns", DnsResolveAsyncWithLibEvent.DnsLibrary.class);
 
         void resolve(String hostName, DnsCallback callBack);
 
