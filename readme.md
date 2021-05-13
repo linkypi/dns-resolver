@@ -54,14 +54,28 @@ www.baidu.com: 14.215.177.39 , index: 0, result[i]: 14.215.177.39  // C++ 打印
 www.baidu.com: 14.215.177.38 , index: 1, result[i]: 14.215.177.38  // C++ 打印
 ```
 
-
+经过一番挣扎，Java返回不同元素返回同样指针的问题其实可以理解为Java中的深浅拷贝问题，但是放到C++就有点抓不着头脑。最后还是在C++中把转换出来的IP再做一次拷贝后放到数组即可。
 
 ### 4. 使用 netty 做域名解析
 
-2021.5.12上班时在B站不经意间看了下netty，发现它里面原本就有域名解析的相关类，于是上[GitHub](https://github.com/netty/netty/blob/4.1/example/src/main/java/io/netty/example/dns/tcp/TcpDnsClient.java) 看了下里面的 example， 有 TcpDnsClient，DnsClient，同样是以异步的方式进行解析。后来想了想前面使用libevent真是绕了太大的弯，不过多少也明白使用jna开发可以比jni更加高效。其实还有个问题，就是在c++代码解析域名中我并没有指定域名服务器，而netty 的demo里面是需要指定的，那libevent默认是使用什么DNS服务器呢？于是找到wireshark试试，发现其实是使用windows系统默认的首选DNS服务器，只要把这个选项一修改就会发现请求的地址也变了。
+2021.5.12上班时在B站不经意间看了下netty最新版本，发现它里面原本就有域名解析的相关类，于是上[GitHub](https://github.com/netty/netty/blob/4.1/example/src/main/java/io/netty/example/dns/tcp/TcpDnsClient.java) 看了下里面的 example， 有 TcpDnsClient，DnsClient，同样是以异步的方式进行解析。后来想了想前面使用libevent真是绕了太大的弯，不过多少也明白使用jna开发可以比jni更加高效。其实还有个问题，就是在c++代码解析域名中我并没有指定域名服务器，而netty 的demo里面是需要指定的，那libevent默认是使用什么DNS服务器呢？于是找到wireshark试试，发现其实是使用windows系统默认的首选DNS服务器，只要把这个选项一修改就会发现请求的地址也变了。
+
+
+
+
 
 ![image-20210512103535732](images/readme/image-20210512103535732.png)
 
 ![image-20210512103637874](images/readme/image-20210512103637874.png)
 
 ![image-20210512102319656](images/readme/image-20210512102319656.png)
+
+正在我拉取rocketmq源码使用最新版本netty的Dns域名解析代码修复bug准备提交pr时又发现了新问题，rocketmq-4.8.0 使用的是 netty-4.0.42.Final，而netty-4.1.x才有Dns相关模块，凉凉... 解决办法要么直接使用新版netty，要么还是使用三方类库如libevent对接。
+
+#### 4.1 直接升级netty到新版
+
+初步尝试修改了netty版本到 4.1.62.Final, 编译后就发现又不少类类做了升级，改动还是比较大。如broker模块需要调整 FileRegion 实现，remoting模块需要调整 NettyBridgeLogger实现等，所以决定还是先放弃了，等官方决定吧。
+
+#### 4.2 使用 libevent 完成域名解析
+
+目前已经在windows系统完成C++与Java互通，小问题就是返回的域名数组有问题。接下来就是在Linux系统完成C++与Java互通，最后再将DLL与so文件放到Java项目的资源文件完成跨平台。其实还差参数配置需要完善。还有更重要的问题是自身对C++不熟悉，自身写的代码很可能存在内存没有释放的问题。

@@ -2,6 +2,7 @@ package com.lynch.test.dns;
 
 import com.lynch.test.util.OSinfo;
 import com.sun.jna.*;
+import com.sun.jna.ptr.ByteByReference;
 import com.sun.jna.ptr.PointerByReference;
 
 import java.util.ArrayList;
@@ -26,37 +27,39 @@ public class DnsResolveAsyncWithLibEvent {
     }
 
     public static void main(String[] args) {
-        if(OSinfo.isWindows()) {
+        if (OSinfo.isWindows()) {
             // 加载 libevent
             System.loadLibrary("event_core");
             System.loadLibrary("event_extra");
         }
-        if(OSinfo.isLinux()){
+        if (OSinfo.isLinux()) {
 
         }
 
         // 对于数组类型只能通过 xxxByReference 获取
-        DnsLibrary.INSTANCE.resolve("www.baidu.com", //new IDnsCallbackImpl());
-              (int errCode, int type, int count,int ttl, String originHost,PointerByReference arrReference)->{
-           System.out.println("errcode: "+ errCode);
-           if(errCode!=0){
-               System.out.println("resolve dns take error: "+ originHost);
-               return ;
-           }
-            final Pointer pointer = arrReference.getPointer();
-            final Pointer[] pointerArray = pointer.getPointerArray(0);
-            List<String> ips = new ArrayList<>();
-            int index = 1;
-            for (Pointer item : pointerArray) {
-                String result = item.getString(0, "utf-8");
-                ips.add(result);
-                index++;
+        DnsLibrary.INSTANCE.resolve("www.baidu.com",
+                (int errCode, int type, int count, int ttl, String originHost, PointerByReference arrReference) -> {
+                    System.out.println("errcode: " + errCode);
+                    if (errCode != 0) {
+                        System.out.println("resolve dns take error: " + originHost);
+                        return;
+                    }
+                    List<String> ips = new ArrayList<>();
 
-                if (index > count) {
-                    break;
-                }
-            }
-            ips.forEach(System.out::println);
-        });
+                    final Pointer pointer = arrReference.getPointer();
+                    final Pointer[] pointerArray = pointer.getPointerArray(0);
+
+                    int index = 1;
+                    for (Pointer item : pointerArray) {
+                        String result = item.getString(0, "utf-8");
+                        ips.add(result);
+                        index++;
+
+                        if (index > count) {
+                            break;
+                        }
+                    }
+                    ips.forEach(System.out::println);
+                });
     }
 }
